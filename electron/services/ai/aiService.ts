@@ -357,6 +357,10 @@ ${formattedMessages}
     // 流式生成
     let summaryText = ''
 
+    if(options.enableThinking !== true) {
+        options.enableThinking = false
+    }
+
     await provider.streamChat(
       [
         { role: 'system', content: systemPrompt },
@@ -364,7 +368,7 @@ ${formattedMessages}
       ],
       { 
         model,
-        enableThinking: options.enableThinking !== false  // 默认启用，除非明确设置为 false
+        enableThinking: options.enableThinking
       },
       (chunk) => {
         summaryText += chunk

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Users, BarChart3, Clock, Image, Loader2, RefreshCw, User, Medal, Search, X, ChevronLeft, Copy, Check } from 'lucide-react'
+import { Users, BarChart3, Clock, Image, Loader2, RefreshCw, User, Medal, Search, X, ChevronLeft, Copy, Check, Sparkles } from 'lucide-react'
 import ReactECharts from 'echarts-for-react'
 import DateRangePicker from '../components/DateRangePicker'
 import ChatBackground from '../components/ChatBackground'
@@ -370,6 +370,23 @@ function GroupAnalyticsPage() {
         </div>
         <h2>{selectedGroup?.displayName}</h2>
         <p>{selectedGroup?.memberCount} 位成员</p>
+      </div>
+      <div className="ai-analysis-section">
+        <button
+          className="ai-analysis-btn"
+          onClick={() => {
+            if (selectedGroup) {
+              window.electronAPI.window.openAISummaryWindow(
+                selectedGroup.username,
+                selectedGroup.displayName || selectedGroup.username
+              )
+            }
+          }}
+          title="AI 群聊分析"
+        >
+          <Sparkles size={18} />
+          <span>AI 群聊分析</span>
+        </button>
       </div>
       <div className="function-grid">
         <div className="function-card" onClick={() => handleFunctionSelect('members')}>
