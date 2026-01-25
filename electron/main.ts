@@ -2123,7 +2123,9 @@ function registerIpcHandlers() {
 
       // 计算时间范围
       const endTime = Math.floor(Date.now() / 1000)
-      const startTime = endTime - (timeRange * 24 * 60 * 60)
+      const startTime = timeRange > 0 
+        ? endTime - (timeRange * 24 * 60 * 60) 
+        : 0 // 0 表示不限时间
 
       // 过滤时间范围内的消息
       const filteredMessages = messages.messages.filter((msg: any) =>

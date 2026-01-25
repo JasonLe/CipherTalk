@@ -318,7 +318,11 @@ function AISummarySettings({
     { value: 1, label: '最近 1 天' },
     { value: 3, label: '最近 3 天' },
     { value: 7, label: '最近 7 天' },
-    { value: 30, label: '最近 30 天' }
+    { value: 30, label: '最近 30 天' },
+    { value: 90, label: '最近 90 天' },
+    { value: 180, label: '最近 180 天' },
+    { value: 365, label: '最近 1 年' },
+    { value: 0, label: '不限时间' }
   ]
 
   return (

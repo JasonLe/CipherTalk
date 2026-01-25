@@ -2,8 +2,19 @@ import { useState, useEffect, useRef } from 'react'
 import { Copy, Download, RefreshCw, Loader2, Send, ArrowLeft, Trash2, LoaderPinwheel, Atom, ChevronDown } from 'lucide-react'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
-import { TIME_RANGE_OPTIONS, type SummaryResult } from '../types/ai'
+import { type SummaryResult } from '../types/ai'
 import './AISummaryWindow.scss'
+
+const TIME_RANGE_OPTIONS = [
+  { days: 1, label: '最近 1 天' },
+  { days: 3, label: '最近 3 天' },
+  { days: 7, label: '最近 7 天' },
+  { days: 30, label: '最近 30 天' },
+  { days: 90, label: '最近 90 天' },
+  { days: 180, label: '最近 180 天' },
+  { days: 365, label: '最近 1 年' },
+  { days: 0, label: '不限时间' }
+]
 
 function AISummaryWindow() {
   const [sessionId, setSessionId] = useState<string>('')

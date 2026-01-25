@@ -326,7 +326,9 @@ ${detailInstructions[detail as keyof typeof detailInstructions] || detailInstruc
 
     // 计算时间范围
     const endTime = Math.floor(Date.now() / 1000)
-    const startTime = endTime - (options.timeRangeDays * 24 * 60 * 60)
+    const startTime = options.timeRangeDays > 0 
+      ? endTime - (options.timeRangeDays * 24 * 60 * 60)
+      : 0
 
     // 获取提供商
     const provider = this.getProvider(options.provider, options.apiKey)
@@ -340,7 +342,8 @@ ${detailInstructions[detail as keyof typeof detailInstructions] || detailInstruc
 
     // 使用会话名称优化提示词
     const targetName = options.sessionName || options.sessionId
-    let userPrompt = `请分析我与"${targetName}"的聊天记录（时间范围：最近${options.timeRangeDays}天，共${messages.length}条消息）：
+    const timeDesc = options.timeRangeDays > 0 ? `最近${options.timeRangeDays}天` : '全部'
+    let userPrompt = `请分析我与"${targetName}"的聊天记录（时间范围：${timeDesc}，共${messages.length}条消息）：
 
 ${formattedMessages}
 
@@ -430,8 +433,8 @@ ${formattedMessages}
     const model = options.model || provider.models[0]
 
     // 格式化消息 (使用最近的消息)
-    // 获取最近 20 条消息作为上下文
-    const recentMessages = messages.slice(-20)
+    // 获取最近 30 条消息作为上下文
+    const recentMessages = messages.slice(-30)
     
     // 简单的消息格式化
     const formattedMessages = recentMessages.map(msg => {
