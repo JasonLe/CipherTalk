@@ -410,6 +410,98 @@ ${formattedMessages}
   }
 
   /**
+   * 生成智能回复
+   */
+  async generateSmartReplies(
+    messages: Message[],
+    contacts: Map<string, Contact>,
+    options: {
+      provider?: string
+      apiKey?: string
+      model?: string
+    }
+  ): Promise<string[]> {
+    if (!this.initialized) {
+      this.init()
+    }
+
+    // 获取提供商
+    const provider = this.getProvider(options.provider, options.apiKey)
+    const model = options.model || provider.models[0]
+
+    // 格式化消息 (使用最近的消息)
+    // 获取最近 20 条消息作为上下文
+    const recentMessages = messages.slice(-20)
+    
+    // 简单的消息格式化
+    const formattedMessages = recentMessages.map(msg => {
+      const isSelf = msg.isSend === 1
+      const sender = isSelf ? '我' : (contacts.get(msg.senderUsername || '')?.nickName || '对方')
+      let content = msg.parsedContent || ''
+      
+      // 简化非文本内容
+      if (msg.localType === 34) content = '[语音]'
+      else if (msg.localType === 43) content = '[视频]'
+      else if (msg.localType === 47) content = '[表情包]'
+      else if (msg.localType === 49) content = '[链接/文件]'
+      else if (msg.localType === 3) content = '[图片]'
+
+      return `${sender}: ${content}`
+    }).join('\n')
+
+    const systemPrompt = `你是一个智能聊天助手。请阅读以下聊天记录（最后一条是对方发给"我"的，或者"我"需要继续回复的）。
+请为"我"生成 5-10 条模仿我的语气，符合人类聊天的，简短、自然、符合语境的建议回复。
+回复风格要多样化（包含肯定、否定、询问、幽默等不同角度）。
+请直接返回一个 JSON 字符串数组，不要包含任何其他解释或 Markdown 标记。
+例如：["好的，没问题", "具体什么时候？", "哈哈，太搞笑了"]`
+
+    const userPrompt = `聊天记录：
+${formattedMessages}
+
+请生成建议回复：`
+
+    let responseText = ''
+    
+    // 使用非流式调用 (如果 provider 支持 streamChat，通常也支持 chat，这里为了简单我们收集 stream)
+    await provider.streamChat(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      { model, enableThinking: false },
+      (chunk) => {
+        responseText += chunk
+      }
+    )
+
+    // 尝试解析 JSON
+    try {
+      // 清理可能的 Markdown 代码块标记
+      const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim()
+      const start = cleanText.indexOf('[')
+      const end = cleanText.lastIndexOf(']')
+      
+      if (start !== -1 && end !== -1) {
+        const jsonStr = cleanText.substring(start, end + 1)
+        const replies = JSON.parse(jsonStr)
+        if (Array.isArray(replies)) {
+          return replies.map(r => String(r))
+        }
+      }
+      
+      // 如果解析失败，尝试按行分割
+      return cleanText.split('\n')
+        .map(line => line.replace(/^\d+\.\s*/, '').replace(/^[-\u2022]\s*/, '').trim())
+        .filter(line => line.length > 0)
+        .slice(0, 10)
+
+    } catch (e) {
+      console.error('解析智能回复失败:', e)
+      return []
+    }
+  }
+
+  /**
    * 测试连接
    */
   async testConnection(providerName: string, apiKey: string): Promise<{ success: boolean; error?: string; needsProxy?: boolean }> {

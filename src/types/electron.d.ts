@@ -572,6 +572,15 @@ export interface ElectronAPI {
       error?: string
     }>
     onSummaryChunk: (callback: (chunk: string) => void) => () => void
+    generateSmartReplies: (sessionId: string, options: {
+      provider?: string
+      apiKey?: string
+      model?: string
+    }) => Promise<{
+      success: boolean
+      replies?: string[]
+      error?: string
+    }>
   }
 }
 

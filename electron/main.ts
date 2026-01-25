@@ -2211,6 +2211,57 @@ function registerIpcHandlers() {
       return { success: false, error: String(e) }
     }
   })
+
+  ipcMain.handle('ai:generateSmartReplies', async (_, sessionId: string, options: {
+    provider?: string
+    apiKey?: string
+    model?: string
+  }) => {
+    try {
+      const { aiService } = await import('./services/ai/aiService')
+      aiService.init()
+
+      // 获取当前配置的提供商和模型
+      const currentProvider = options.provider || configService?.getAICurrentProvider() || 'zhipu'
+      const providerConfig = configService?.getAIProviderConfig(currentProvider)
+      
+      const mergedOptions = {
+        provider: currentProvider,
+        apiKey: options.apiKey || providerConfig?.apiKey,
+        model: options.model || providerConfig?.model,
+      }
+
+      // 获取最近 20 条消息
+      const messages = await chatService.getMessages(sessionId, 0, 30)
+      if (!messages.success || !messages.messages) {
+        return { success: false, error: '获取消息失败' }
+      }
+
+      // 获取联系人信息
+      const contacts = new Map()
+      // ... (简化版联系人获取，实际 aiService 会处理 unknown)
+      // 为保持一致性，还是获取一下 sender
+      const senderSet = new Set<string>()
+      messages.messages.forEach((msg: any) => {
+        if (msg.senderUsername) senderSet.add(msg.senderUsername)
+      })
+      
+      for (const username of Array.from(senderSet)) {
+        const contact = await chatService.getContact(username)
+        if (contact) contacts.set(username, contact)
+      }
+
+      // 翻转消息顺序（getMessages 返回的是倒序的，我们需要正序）
+      const sortedMessages = [...messages.messages].reverse()
+
+      const replies = await aiService.generateSmartReplies(sortedMessages, contacts, mergedOptions)
+      
+      return { success: true, replies }
+    } catch (e) {
+      console.error('[AI] 生成智能回复失败:', e)
+      return { success: false, error: String(e) }
+    }
+  })
 }
 
 // 主窗口引用

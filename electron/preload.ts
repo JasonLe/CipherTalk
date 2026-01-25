@@ -308,7 +308,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onSummaryChunk: (callback: (chunk: string) => void) => {
       ipcRenderer.on('ai:summaryChunk', (_, chunk) => callback(chunk))
       return () => ipcRenderer.removeAllListeners('ai:summaryChunk')
-    }
+    },
+    generateSmartReplies: (sessionId: string, options: {
+      provider?: string
+      apiKey?: string
+      model?: string
+    }) => ipcRenderer.invoke('ai:generateSmartReplies', sessionId, options)
   }
 })
 

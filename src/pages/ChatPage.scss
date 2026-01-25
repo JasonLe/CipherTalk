@@ -2871,6 +2871,25 @@ video::-webkit-media-controls-fullscreen-button {
   }
 }
 
+// 智能回复弹窗样式
+.smart-reply-modal {
+  max-width: 500px;
+  
+  .reply-item {
+    transition: all 0.2s;
+    
+    &:hover {
+      background: var(--bg-hover) !important;
+      border-color: var(--primary) !important;
+      
+      button {
+        color: var(--primary) !important;
+        background: var(--bg-tertiary) !important;
+      }
+    }
+  }
+}
+
 // 消息信息弹窗样式
 .message-info-overlay {
   position: fixed;

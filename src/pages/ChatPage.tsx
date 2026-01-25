@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Search, MessageSquare, AlertCircle, Loader2, RefreshCw, X, ChevronDown, Info, Calendar, Database, Hash, Image as ImageIcon, Play, Video, Copy, ZoomIn, CheckSquare, Check, Edit, Link, Sparkles } from 'lucide-react'
+import { Search, MessageSquare, AlertCircle, Loader2, RefreshCw, X, ChevronDown, Info, Calendar, Database, Hash, Image as ImageIcon, Play, Video, Copy, ZoomIn, CheckSquare, Check, Edit, Link, Sparkles, Bot, Brain } from 'lucide-react'
 import { useChatStore } from '../stores/chatStore'
 import { useUpdateStatusStore } from '../stores/updateStatusStore'
 import ChatBackground from '../components/ChatBackground'
@@ -234,6 +234,11 @@ function ChatPage(_props: ChatPageProps) {
   const [copyToast, setCopyToast] = useState(false)
   const [showMessageInfo, setShowMessageInfo] = useState<Message | null>(null) // 消息信息弹窗
 
+  // 智能回复相关状态
+  const [showSmartReplyModal, setShowSmartReplyModal] = useState(false)
+  const [smartReplies, setSmartReplies] = useState<string[]>([])
+  const [isGeneratingReplies, setIsGeneratingReplies] = useState(false)
+
   // 检查图片密钥配置（XOR 和 AES 都需要配置）
   useEffect(() => {
     Promise.all([getImageXorKey(), getImageAesKey()]).then(([xorKey, aesKey]) => {
@@ -252,6 +257,30 @@ function ChatPage(_props: ChatPageProps) {
       console.error('加载用户头像失败:', e)
     }
   }, [])
+
+  // 智能回复
+  const handleSmartReply = async () => {
+    if (!currentSessionId || isGeneratingReplies) return
+    
+    setShowSmartReplyModal(true)
+    setIsGeneratingReplies(true)
+    setSmartReplies([]) // 清空旧数据
+
+    try {
+      // 检查 AI 提供商配置 (简化流程，先不检查，直接调用，后端会处理)
+      const result = await window.electronAPI.ai.generateSmartReplies(currentSessionId, {})
+      
+      if (result.success && result.replies) {
+        setSmartReplies(result.replies)
+      } else {
+        setSmartReplies(['生成失败: ' + (result.error || '未知错误')])
+      }
+    } catch (e) {
+      setSmartReplies(['生成出错: ' + String(e)])
+    } finally {
+      setIsGeneratingReplies(false)
+    }
+  }
 
   // 加载会话详情
   const loadSessionDetail = useCallback(async (sessionId: string) => {
@@ -900,6 +929,13 @@ function ChatPage(_props: ChatPageProps) {
                   <Sparkles size={18} />
                 </button>
                 <button
+                  className="icon-btn smart-reply-btn"
+                  onClick={handleSmartReply}
+                  title="智能回复"
+                >
+                  <Brain size={18} />
+                </button>
+                <button
                   className={`icon-btn detail-btn ${showDetailPanel ? 'active' : ''}`}
                   onClick={toggleDetailPanel}
                   title="会话详情"
@@ -1243,6 +1279,70 @@ function ChatPage(_props: ChatPageProps) {
             >
               <Info size={16} />
               <span>查看消息信息</span>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 智能回复弹窗 */}
+      {showSmartReplyModal && createPortal(
+        <div className="message-info-overlay" onClick={() => setShowSmartReplyModal(false)}>
+          <div className="message-info-modal smart-reply-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="header-title">
+                <Bot size={18} />
+                <h3>智能回复建议</h3>
+              </div>
+              <button className="close-btn" onClick={() => setShowSmartReplyModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body">
+              {isGeneratingReplies ? (
+                <div className="loading-container" style={{ padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', color: 'var(--text-secondary)' }}>
+                  <Loader2 size={32} className="spin" />
+                  <span>正在分析语境并生成回复...</span>
+                </div>
+              ) : smartReplies.length > 0 ? (
+                <div className="reply-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {smartReplies.map((reply, index) => (
+                    <div key={index} className="reply-item" style={{ 
+                      padding: '12px 16px', 
+                      background: 'var(--bg-tertiary)', 
+                      borderRadius: '8px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      border: '1px solid var(--border-color)'
+                    }}>
+                      <span style={{ flex: 1, fontSize: '14px', lineHeight: '1.5', color: 'var(--text-primary)' }}>{reply}</span>
+                      <button 
+                        className="icon-btn" 
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(reply)
+                            setCopyToast(true)
+                            setTimeout(() => setCopyToast(false), 2000)
+                            setShowSmartReplyModal(false)
+                          } catch (e) {
+                            console.error('复制失败', e)
+                          }
+                        }}
+                        title="复制"
+                        style={{ padding: '8px', borderRadius: '6px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                      >
+                        <Copy size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+                  暂无建议回复
+                </div>
+              )}
             </div>
           </div>
         </div>,

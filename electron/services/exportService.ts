@@ -1955,9 +1955,7 @@ class ExportService {
    * 导出通讯录
    */
   async exportContacts(
-    outputDir: string,
-    options: ContactExportOptions
-  ): Promise<{ success: boolean; successCount?: number; error?: string }> {
+      outputDir: string, options: ContactExportOptions, p0: (progress: any) => void  ): Promise<{ success: boolean; successCount?: number; error?: string }> {
     try {
       if (!this.dbDir) {
         const connectResult = await this.connect()
